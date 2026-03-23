@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="dark"]{
+  --bg:#0a0a14;--bg-nav:rgba(10,10,20,.96);
+  --surface:#141426;--surface2:#1a1a30;--surface3:#222240;
+  --border:rgba(200,160,100,.13);--border-hi:rgba(200,160,100,.32);
+  --accent:#c8a064;--accent2:#e8c088;--accent-dark:#a87840;
+  --red:#e05555;--text:#ede8dc;--text-mid:rgba(237,232,220,.62);--text-dim:rgba(237,232,220,.35);
+  --shadow-hero:0 28px 72px rgba(0,0,0,.72);--shadow-card:0 10px 40px rgba(0,0,0,.5);
+  --hero-grad:linear-gradient(to top,rgba(0,0,0,.74) 0%,rgba(0,0,0,.1) 48%,transparent 72%);
+  --noise-op:.025;--toggle-bg:#1a1a30;--toggle-knob:#c8a064;color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#f5f0e8;--bg-nav:rgba(245,240,232,.94);
+  --surface:#fffdf7;--surface2:#f0ebe0;--surface3:#e8e0d0;
+  --border:rgba(160,120,60,.14);--border-hi:rgba(160,120,60,.36);
+  --accent:#9a6c30;--accent2:#b88040;--accent-dark:#7a5020;
+  --red:#c84040;--text:#2a2018;--text-mid:rgba(42,32,24,.60);--text-dim:rgba(42,32,24,.38);
+  --shadow-hero:0 28px 72px rgba(100,80,40,.22);--shadow-card:0 10px 40px rgba(100,80,40,.14);
+  --hero-grad:linear-gradient(to top,rgba(20,12,4,.68) 0%,rgba(20,12,4,.08) 48%,transparent 72%);
+  --noise-op:.018;--toggle-bg:#e8dfc8;--toggle-knob:#9a6c30;color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:'Outfit',sans-serif;color:var(--text);display:flex;flex-direction:column;transition:background .35s,color .35s}
+::-webkit-scrollbar{display:none}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:var(--noise-op);
+background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+background-size:180px}
+#app{flex:1;position:relative;overflow:hidden;z-index:1}
+.view{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);
+transition:transform .44s cubic-bezier(.4,0,.2,1),opacity .44s ease,background .35s}
+.view.hidden{transform:translateX(100%);opacity:0;pointer-events:none}
+.view.active{transform:translateX(0);opacity:1}
+.nav{z-index:200;flex-shrink:0;height:62px;background:var(--bg-nav);backdrop-filter:blur(24px);
+border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;
+transition:background .35s,border-color .35s}
+.nb{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;
+align-items:center;gap:3px;padding:8px 16px;position:relative}
+.ni{font-size:1.2rem;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.nl{font-size:.55rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);transition:color .2s}
+.nd{width:3px;height:3px;border-radius:50%;background:var(--accent);position:absolute;bottom:4px;opacity:0;transition:opacity .2s}
+.nb.on .ni{transform:scale(1.18)}.nb.on .nl{color:var(--accent)}.nb.on .nd{opacity:1}
+.theme-toggle{background:var(--toggle-bg);border:1px solid var(--border-hi);border-radius:100px;
+width:50px;height:26px;position:relative;cursor:pointer;transition:background .35s,border-color .35s;
+display:flex;align-items:center;padding:3px;flex-shrink:0}
+.toggle-knob{width:18px;height:18px;border-radius:50%;background:var(--toggle-knob);position:absolute;left:4px;
+transition:transform .32s cubic-bezier(.34,1.56,.64,1),background .35s;
+display:flex;align-items:center;justify-content:center;font-size:.65rem;line-height:1}
+.toggle-knob::after{content:'🌙'}
+[data-theme="light"] .toggle-knob{transform:translateX(22px)}
+[data-theme="light"] .toggle-knob::after{content:'☀️'}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes starPop{0%{transform:scale(1)}42%{transform:scale(1.65)}74%{transform:scale(.84)}100%{transform:scale(1)}}
+@keyframes themeFlash{0%{opacity:.18}100%{opacity:0}}
+.fu{animation:fadeUp .52s cubic-bezier(.22,1,.36,1) both}
+.si{animation:scaleIn .48s cubic-bezier(.22,1,.36,1) both}
+.star-pop{animation:starPop .38s cubic-bezier(.22,1,.36,1)}
+.theme-flash{position:fixed;inset:0;z-index:9999;pointer-events:none;background:var(--bg);animation:themeFlash .4s ease forwards}
+.mi:nth-child(1){animation-delay:.04s}.mi:nth-child(2){animation-delay:.09s}.mi:nth-child(3){animation-delay:.14s}
+.mi:nth-child(4){animation-delay:.19s}.mi:nth-child(5){animation-delay:.24s}.mi:nth-child(n+6){animation-delay:.29s}
+.st:nth-child(1){animation-delay:.06s}.st:nth-child(2){animation-delay:.12s}.st:nth-child(n+3){animation-delay:.18s}
+.alb-card:nth-child(1){animation-delay:.04s}.alb-card:nth-child(2){animation-delay:.09s}.alb-card:nth-child(n+3){animation-delay:.14s}
+#home-view{padding-bottom:32px}
+.home-hd{padding:28px 20px 12px;display:flex;justify-content:space-between;align-items:flex-start}
+.wordmark{font-family:'Cormorant Garamond',serif;font-size:2.9rem;font-weight:600;line-height:1;
+letter-spacing:-.02em;background:linear-gradient(130deg,var(--accent2) 0%,var(--accent) 55%,var(--accent-dark) 100%);
+-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;display:inline-block}
+.tagline{font-size:.68rem;font-weight:300;color:var(--text-dim);margin-top:5px;letter-spacing:.06em}
+.hd-right{display:flex;flex-direction:column;align-items:flex-end;gap:7px;padding-top:4px}
+.hd-date{font-size:.6rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim)}
+.hd-stats{font-size:.7rem;font-weight:500;color:var(--accent)}
+.hero-wrap{padding:6px 18px 20px}
+.hero-card{width:100%;aspect-ratio:4/3;border-radius:22px;overflow:hidden;background:var(--surface2);
+position:relative;box-shadow:var(--shadow-hero),0 0 0 1px var(--border)}
+.hero-card img,.hero-card video{width:100%;height:100%;object-fit:cover;display:block}
+.hero-empty{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+background:radial-gradient(ellipse at 50% 60%,var(--surface3) 0%,var(--surface2) 70%)}
+.he-ring{width:74px;height:74px;border-radius:50%;border:1.5px dashed rgba(200,160,100,.28);display:flex;align-items:center;justify-content:center}
+.he-txt{font-size:.78rem;color:var(--text-dim);letter-spacing:.08em;font-weight:300}
+.he-hint{font-size:.66rem;color:var(--text-dim);opacity:.6;letter-spacing:.04em}
+.hero-grad{position:absolute;inset:0;pointer-events:none;background:var(--hero-grad)}
+.hero-foot{position:absolute;bottom:0;left:0;right:0;padding:12px 14px 14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.hero-info{flex:1;min-width:0}
+.hero-badge{display:inline-flex;align-items:center;background:rgba(0,0,0,.46);backdrop-filter:blur(8px);
+border:1px solid rgba(255,255,255,.12);padding:2px 8px;border-radius:100px;font-size:.55rem;font-weight:700;
+letter-spacing:.1em;color:rgba(255,255,255,.76);margin-bottom:5px}
+.hero-caption{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-style:italic;color:white;
+line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.hero-time{font-size:.64rem;color:rgba(255,255,255,.5);font-weight:300}
+.hero-star{flex-shrink:0;background:rgba(0,0,0,.44);border:1px solid rgba(255,255,255,.15);border-radius:50%;
+width:38px;height:38px;font-size:1rem;cursor:pointer;backdrop-filter:blur(8px);
+display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.hero-star:active{transform:scale(1.26)}
+.unmute-btn{position:absolute;top:10px;left:12px;background:rgba(0,0,0,.52);border:1px solid rgba(255,255,255,.18);
+border-radius:100px;padding:4px 10px;font-size:.62rem;font-weight:700;letter-spacing:.08em;
+color:rgba(255,255,255,.85);cursor:pointer;backdrop-filter:blur(8px);display:flex;align-items:center;gap:5px;z-index:2}
+.fv-backdrop{position:fixed;inset:0;z-index:1000;background:#000;display:flex;flex-direction:column;
+align-items:center;justify-content:center;animation:fadeIn .22s ease}
+.fv-backdrop.out{animation:fadeIn .18s ease reverse}
+.fv-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);
+border-radius:50%;width:40px;height:40px;color:white;font-size:1.1rem;cursor:pointer;
+display:flex;align-items:center;justify-content:center;z-index:10}
+.fv-media-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:60px 0}
+.fv-media{max-width:100%;max-height:100%;object-fit:contain}
+.fv-bottom{position:absolute;bottom:20px;left:0;right:0;padding:0 20px}
+.fv-caption{font-family:'Cormorant Garamond',serif;font-size:1.1rem;font-style:italic;color:white;opacity:.9}
+.fv-time{font-size:.65rem;color:rgba(255,255,255,.5);margin-top:3px}
+.sec-hd{padding:6px 20px 10px;display:flex;justify-content:space-between;align-items:center}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--text)}
+.sec-pill{font-size:.6rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mid);
+background:var(--surface2);padding:3px 10px;border-radius:100px;border:1px solid var(--border)}
+.star-strip{display:flex;gap:10px;overflow-x:auto;padding:4px 18px 20px}
+.st{flex-shrink:0;width:84px;height:84px;border-radius:15px;overflow:hidden;background:var(--surface2);
+border:1.5px solid rgba(200,160,100,.38);box-shadow:0 4px 18px rgba(0,0,0,.22);cursor:pointer;position:relative;transition:transform .2s}
+[data-theme="light"] .st{border-color:rgba(160,120,60,.36)}
+.st:active{transform:scale(.92)}
+.st img,.st video{width:100%;height:100%;object-fit:cover;display:block}
+.st-badge{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.5);padding:2px 4px;border-radius:6px;font-size:.58rem}
+.star-empty{font-size:.75rem;color:var(--text-dim);font-style:italic;font-weight:300;padding:10px 0}
+.grid-wrap{padding:0 18px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding-bottom:12px}
+.mi{aspect-ratio:1;border-radius:15px;overflow:hidden;background:var(--surface2);position:relative;cursor:pointer;transition:transform .2s}
+.mi:active{transform:scale(.93)}
+.mi img,.mi video{width:100%;height:100%;object-fit:cover;display:block}
+.mi-grad{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to top,rgba(0,0,0,.42) 0%,transparent 55%)}
+.mi-star{position:absolute;top:5px;right:5px;font-size:.82rem;background:none;border:none;cursor:pointer;
+opacity:.72;transition:opacity .2s,transform .2s;line-height:1;padding:2px}
+.mi-star:active{transform:scale(1.45);opacity:1}
+.mi-del{position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,.52);color:rgba(255,255,255,.82);border:none;
+border-radius:50%;width:20px;height:20px;font-size:.58rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.vid-badge{position:absolute;bottom:5px;left:6px;background:rgba(0,0,0,.52);padding:2px 6px;border-radius:8px;
+font-size:.52rem;font-weight:700;letter-spacing:.08em;color:rgba(255,255,255,.82);pointer-events:none}
+.grid-empty{grid-column:1/-1;padding:28px 0;text-align:center;font-size:.78rem;color:var(--text-dim);font-style:italic;font-weight:300}
+#albums-view{padding-bottom:32px}
+.alb-hd{padding:28px 20px 18px;display:flex;justify-content:space-between;align-items:flex-end}
+.alb-hd-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:600;color:var(--text)}
+.alb-new-btn{background:var(--accent);border:none;border-radius:100px;padding:8px 18px;
+font-family:'Outfit',sans-serif;font-size:.75rem;font-weight:600;color:var(--bg);cursor:pointer;letter-spacing:.04em;transition:opacity .2s,transform .15s}
+.alb-new-btn:active{opacity:.8;transform:scale(.96)}
+.alb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 18px 12px}
+.alb-card{border-radius:18px;overflow:hidden;background:var(--surface2);position:relative;cursor:pointer;
+transition:transform .2s;box-shadow:0 6px 24px rgba(0,0,0,.28)}
+.alb-card:active{transform:scale(.96)}
+.alb-mosaic{width:100%;aspect-ratio:1;position:relative;background:var(--surface3);overflow:hidden}
+.alb-mosaic-img{position:absolute;object-fit:cover;display:block}
+.alb-mosaic.c1 .alb-mosaic-img:nth-child(1){inset:0;width:100%;height:100%}
+.alb-mosaic.c2 .alb-mosaic-img:nth-child(1){top:0;left:0;width:50%;height:100%}
+.alb-mosaic.c2 .alb-mosaic-img:nth-child(2){top:0;right:0;width:calc(50% - 2px);height:100%}
+.alb-mosaic.c3 .alb-mosaic-img:nth-child(1){top:0;left:0;width:50%;height:100%}
+.alb-mosaic.c3 .alb-mosaic-img:nth-child(2){top:0;right:0;width:calc(50% - 2px);height:calc(50% - 1px)}
+.alb-mosaic.c3 .alb-mosaic-img:nth-child(3){bottom:0;right:0;width:calc(50% - 2px);height:calc(50% - 1px)}
+.alb-mosaic.c4 .alb-mosaic-img:nth-child(1){top:0;left:0;width:calc(50% - 1px);height:calc(50% - 1px)}
+.alb-mosaic.c4 .alb-mosaic-img:nth-child(2){top:0;right:0;width:calc(50% - 1px);height:calc(50% - 1px)}
+.alb-mosaic.c4 .alb-mosaic-img:nth-child(3){bottom:0;left:0;width:calc(50% - 1px);height:calc(50% - 1px)}
+.alb-mosaic.c4 .alb-mosaic-img:nth-child(4){bottom:0;right:0;width:calc(50% - 1px);height:calc(50% - 1px)}
+.alb-empty-mosaic{width:100%;aspect-ratio:1;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:.3}
+.alb-meta{padding:10px 12px 14px}
+.alb-name{font-family:'Cormorant Garamond',serif;font-size:1rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alb-count{font-size:.65rem;color:var(--text-dim);margin-top:2px;font-weight:400}
+.alb-del-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.52);border:none;border-radius:50%;
+width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:.62rem;cursor:pointer;
+color:rgba(255,255,255,.8)}
+.alb-no-albums{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:.82rem;font-style:italic;line-height:1.8;grid-column:1/-1}
+.alb-no-icon{font-size:2.5rem;margin-bottom:12px;opacity:.38}
+#album-detail-view{padding-bottom:32px}
+.detail-hd{padding:28px 20px 16px;display:flex;align-items:center;gap:12px}
+.back-btn{background:var(--surface2);border:1px solid var(--border);border-radius:50%;
+width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;flex-shrink:0}
+.detail-title-wrap{flex:1;min-width:0}
+.detail-title{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail-sub{font-size:.68rem;color:var(--text-dim);margin-top:2px;font-weight:300}
+.detail-add-btn{background:var(--accent);border:none;border-radius:100px;padding:7px 14px;
+font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:600;color:var(--bg);cursor:pointer;flex-shrink:0}
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:0 18px 12px}
+.detail-empty{grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--text-dim);font-size:.8rem;font-style:italic}
+.pick-list{display:flex;flex-direction:column;gap:0;max-height:45vh;overflow-y:auto;margin:0 -22px;padding:0 22px}
+.pick-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.pick-item:last-child{border-bottom:none}
+.pick-thumb{width:50px;height:50px;border-radius:10px;overflow:hidden;background:var(--surface2);flex-shrink:0}
+.pick-thumb img,.pick-thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.pick-info{flex:1;min-width:0}
+.pick-cap{font-size:.84rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick-time{font-size:.65rem;color:var(--text-dim);margin-top:2px}
+.pick-chk{font-size:1.1rem;flex-shrink:0}
+.pick-item.sel .pick-chk{transform:scale(1.2)}
+.pick-empty{text-align:center;padding:28px 0;color:var(--text-dim);font-size:.8rem;font-style:italic}
+.backdrop{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.78);backdrop-filter:blur(18px);
+display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .22s ease}
+.backdrop.out{animation:fadeIn .18s ease reverse}
+.sheet{width:100%;max-width:490px;background:var(--surface);border-radius:28px 28px 0 0;
+padding:10px 22px 28px;border-top:1px solid var(--border-hi);animation:slideUp .36s cubic-bezier(.22,1,.36,1)}
+.handle{width:34px;height:4px;border-radius:2px;background:var(--border-hi);margin:0 auto 18px}
+.sheet-prev{width:100%;aspect-ratio:4/3;border-radius:18px;overflow:hidden;background:var(--surface2);margin-bottom:18px;box-shadow:var(--shadow-card)}
+.sheet-prev img,.sheet-prev video{width:100%;height:100%;object-fit:cover;display:block}
+.sheet-title{font-family:'Cormorant Garamond',serif;font-size:1.45rem;font-weight:600;text-align:center;color:var(--text);margin-bottom:3px}
+.sheet-sub{font-size:.72rem;color:var(--text-dim);text-align:center;margin-bottom:16px;font-weight:300}
+.cap-field,.name-field{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:14px;
+padding:11px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:300;outline:none;
+-webkit-appearance:none;transition:border-color .22s}
+.cap-field{resize:none;margin-bottom:14px}
+.name-field{margin-bottom:14px}
+.cap-field::placeholder,.name-field::placeholder{color:var(--text-dim)}
+.cap-field:focus,.name-field:focus{border-color:var(--border-hi)}
+.sheet-btns{display:flex;flex-direction:column;gap:9px;margin-top:4px}
+.sbtn{width:100%;padding:14px;border-radius:14px;border:none;font-family:'Outfit',sans-serif;
+font-size:.88rem;font-weight:600;cursor:pointer;transition:transform .14s,opacity .14s}
+.sbtn:active{transform:scale(.97);opacity:.85}
+.sbtn-p{background:linear-gradient(135deg,var(--accent2),var(--accent));color:var(--bg)}
+.sbtn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.sbtn-g{background:transparent;color:var(--text-dim);font-weight:400}
+/* upload zone shown in camera view for testing */
+#cam-view{background:var(--surface2);overflow:hidden;display:flex;align-items:center;justify-content:center}
+.cam-test-inner{display:flex;flex-direction:column;align-items:center;gap:24px;padding:40px 24px;text-align:center}
+.cam-test-icon{font-size:3.5rem;opacity:.5}
+.cam-test-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--text-dim);font-style:italic}
+.cam-test-note{font-size:.72rem;color:var(--text-dim);line-height:1.6;max-width:260px}
+.upload-btn-big{background:var(--accent);border:none;border-radius:100px;padding:14px 32px;
+font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:600;color:var(--bg);cursor:pointer;
+transition:opacity .2s,transform .15s}
+.upload-btn-big:active{opacity:.8;transform:scale(.96)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div id="home-view" class="view active">
+    <div class="home-hd">
+      <div><div class="wordmark">Lumi</div><div class="tagline">your little moments</div></div>
+      <div class="hd-right">
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme"><div class="toggle-knob"></div></button>
+        <div class="hd-date" id="hd-date"></div>
+        <div class="hd-stats" id="hd-stats"></div>
+      </div>
+    </div>
+    <div class="hero-wrap">
+      <div class="hero-card si" id="hero-card">
+        <div class="hero-empty">
+          <div class="he-ring">
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+              <path d="M13 2v22M2 13h22M4.5 4.5l17 17M21.5 4.5l-17 17" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".45" style="color:var(--accent)"/>
+            </svg>
+          </div>
+          <div class="he-txt">No moments yet</div><div class="he-hint">Tap Capture to upload</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec-hd fu" style="animation-delay:.08s">
+      <div class="sec-title">⭐ Starred</div><div class="sec-pill" id="star-pill">0</div>
+    </div>
+    <div class="star-strip" id="star-strip"><div class="star-empty">Star your favourites to pin them here.</div></div>
+    <div class="sec-hd fu" style="animation-delay:.14s">
+      <div class="sec-title">All Memories</div><div class="sec-pill" id="all-pill">0</div>
+    </div>
+    <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+  </div>
+
+  <!-- ALBUMS -->
+  <div id="albums-view" class="view hidden">
+    <div class="alb-hd">
+      <div class="alb-hd-title">Albums</div>
+      <button class="alb-new-btn" onclick="openNewAlbumModal()">+ New Album</button>
+    </div>
+    <div class="alb-grid" id="alb-grid"></div>
+  </div>
+
+  <!-- ALBUM DETAIL -->
+  <div id="album-detail-view" class="view hidden">
+    <div class="detail-hd">
+      <button class="back-btn" onclick="goTo('albums')">←</button>
+      <div class="detail-title-wrap">
+        <div class="detail-title" id="detail-title">Album</div>
+        <div class="detail-sub" id="detail-sub">0 moments</div>
+      </div>
+      <button class="detail-add-btn" onclick="openPickModal()">+ Add</button>
+    </div>
+    <div class="detail-grid" id="detail-grid"></div>
+  </div>
+
+  <!-- CAPTURE (upload only in test mode) -->
+  <div id="cam-view" class="view hidden">
+    <div class="cam-test-inner">
+      <div class="cam-test-icon">📸</div>
+      <div class="cam-test-title">Camera not available here</div>
+      <div class="cam-test-note">Camera requires the deployed app on your phone. You can still test by uploading photos from your device.</div>
+      <button class="upload-btn-big" onclick="document.getElementById('up').click()">Upload a Photo / Video</button>
+    </div>
+    <input type="file" id="up" style="display:none" accept="image/*,video/*">
+  </div>
+
+</div>
+
+<nav class="nav">
+  <button class="nb on" id="nav-home" onclick="goTo('home')"><span class="ni">🏠</span><span class="nl">Home</span><span class="nd"></span></button>
+  <button class="nb" id="nav-albums" onclick="goTo('albums')"><span class="ni">🗂</span><span class="nl">Albums</span><span class="nd"></span></button>
+  <button class="nb" id="nav-cam" onclick="goTo('cam')"><span class="ni">📸</span><span class="nl">Capture</span><span class="nd"></span></button>
+</nav>
+
+<script>
+let db, currentAlbumId=null;
+let currentTheme = 'dark';
+
+document.documentElement.setAttribute('data-theme', currentTheme);
+document.getElementById('hd-date').textContent =
+  new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}).toUpperCase();
+
+const dbr = indexedDB.open('LumiTest_v1', 1);
+dbr.onupgradeneeded = e => {
+  const d = e.target.result;
+  if (!d.objectStoreNames.contains('m')) d.createObjectStore('m',{keyPath:'id',autoIncrement:true});
+  if (!d.objectStoreNames.contains('albums')) d.createObjectStore('albums',{keyPath:'id',autoIncrement:true});
+};
+dbr.onsuccess = e => { db = e.target.result; render(); };
+
+function toggleTheme(){
+  currentTheme = currentTheme==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  const f=document.createElement('div'); f.className='theme-flash'; document.body.appendChild(f); setTimeout(()=>f.remove(),420);
+}
+
+const VIEWS=['home','albums','album-detail','cam'];
+function goTo(id){
+  VIEWS.forEach(v=>{const el=document.getElementById(v+'-view');if(!el)return;el.classList.toggle('hidden',v!==id);el.classList.toggle('active',v===id);});
+  ['home','albums','cam'].forEach(v=>{const nb=document.getElementById('nav-'+v);if(nb)nb.classList.toggle('on',v===id);});
+  if(id==='home') render();
+  if(id==='albums') renderAlbums();
+  if(id==='album-detail') renderAlbumDetail();
+}
+
+/* ── save ── */
+function saveMoment(blob, type){
+  const time = new Date().toLocaleString([],{hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'});
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const data = ev.target.result;
+    const tx = db.transaction('m','readwrite');
+    tx.objectStore('m').add({data, type, time, starred:false, caption:''});
+    tx.oncomplete = () => openSaveModal(data, type);
+  };
+  reader.readAsDataURL(blob);
+}
+
+function openSaveModal(data, type){
+  const url = data;
+  const isVid = type.includes('video')||type.includes('webm');
+  const bd = document.createElement('div'); bd.className='backdrop';
+  bd.innerHTML=`<div class="sheet"><div class="handle"></div>
+    <div class="sheet-prev">${isVid?`<video src="${url}" autoplay loop controls playsinline></video>`:`<img src="${url}">`}</div>
+    <div class="sheet-title">Moment saved ✦</div>
+    <div class="sheet-sub">Add a caption (optional)</div>
+    <textarea class="cap-field" id="cap-in" rows="2" placeholder="What's the story…"></textarea>
+    <div class="sheet-btns">
+      <button class="sbtn sbtn-p" id="btn-keep">Save to Lumi</button>
+      <button class="sbtn sbtn-g" id="btn-disc">Discard</button>
+    </div></div>`;
+  document.body.appendChild(bd);
+  function applyCaption(){const cap=bd.querySelector('#cap-in').value.trim();if(!cap)return;const tx=db.transaction('m','readwrite');tx.objectStore('m').openCursor(null,'prev').onsuccess=e=>{const cur=e.target.result;if(cur){const it=cur.value;it.caption=cap;cur.update(it);}};}
+  function close(del=false){if(del){const tx=db.transaction('m','readwrite');tx.objectStore('m').openCursor(null,'prev').onsuccess=e=>{const c=e.target.result;if(c)c.delete();};}bd.classList.add('out');setTimeout(()=>bd.remove(),190);goTo('home');}
+  bd.querySelector('#btn-keep').onclick=()=>{applyCaption();close();};
+  bd.querySelector('#btn-disc').onclick=()=>close(true);
+  bd.addEventListener('click',e=>{if(e.target===bd)close();});
+}
+
+/* ── helpers ── */
+function getItemUrl(it){
+  if(it.data) return Promise.resolve(it.data);
+  if(it.blob) return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(it.blob);});
+  return Promise.resolve('');
+}
+function getAllAlbums(cb){const items=[];db.transaction('albums','readonly').objectStore('albums').openCursor(null,'prev').onsuccess=e=>{const cur=e.target.result;if(cur){items.push(cur.value);cur.continue();}else cb(items);};}
+function getAllMoments(cb){const items=[];db.transaction('m','readonly').objectStore('m').openCursor(null,'prev').onsuccess=e=>{const cur=e.target.result;if(cur){items.push(cur.value);cur.continue();}else cb(items);};}
+
+/* ── albums ── */
+function openNewAlbumModal(){
+  const bd=document.createElement('div');bd.className='backdrop';
+  bd.innerHTML=`<div class="sheet"><div class="handle"></div><div class="sheet-title">New Album</div><div class="sheet-sub">Give your album a name</div><input class="name-field" id="alb-name-in" type="text" placeholder="e.g. Road Trip, Family…" maxlength="40"><div class="sheet-btns"><button class="sbtn sbtn-p" id="btn-create">Create Album</button><button class="sbtn sbtn-g" id="btn-cancel">Cancel</button></div></div>`;
+  document.body.appendChild(bd);setTimeout(()=>bd.querySelector('#alb-name-in').focus(),320);
+  const close=()=>{bd.classList.add('out');setTimeout(()=>bd.remove(),190);};
+  bd.querySelector('#btn-cancel').onclick=close;bd.addEventListener('click',e=>{if(e.target===bd)close();});
+  bd.querySelector('#btn-create').onclick=()=>{const name=bd.querySelector('#alb-name-in').value.trim();if(!name)return;const tx=db.transaction('albums','readwrite');tx.objectStore('albums').add({name,momentIds:[],createdAt:Date.now()});tx.oncomplete=()=>{close();renderAlbums();};};
+}
+function deleteAlbum(id,e){e.stopPropagation();if(!confirm('Delete album? Moments are kept.'))return;db.transaction('albums','readwrite').objectStore('albums').delete(id).onsuccess=renderAlbums;}
+function openAlbumDetail(id){currentAlbumId=id;goTo('album-detail');}
+
+async function renderAlbums(){
+  if(!db)return;const grid=document.getElementById('alb-grid');grid.innerHTML='';
+  getAllAlbums(async albums=>{
+    if(!albums.length){grid.innerHTML=`<div class="alb-no-albums"><div class="alb-no-icon">🗂</div>No albums yet.<br>Tap <b>+ New Album</b> to create one.</div>`;return;}
+    getAllMoments(async moments=>{
+      for(const alb of albums){
+        const albMoments=moments.filter(m=>alb.momentIds.includes(m.id));
+        const card=document.createElement('div');card.className='alb-card fu';card.onclick=()=>openAlbumDetail(alb.id);
+        const n=Math.min(albMoments.length,4);const cls=n?'c'+n:'';
+        let mosaicInner='';
+        for(const m of albMoments.slice(0,4)){
+          const url=await getItemUrl(m);const isVid=m.type&&(m.type.includes('video')||m.type.includes('webm'));
+          mosaicInner+=isVid?`<video class="alb-mosaic-img" src="${url}" muted></video>`:`<img class="alb-mosaic-img" src="${url}">`;
+        }
+        const mosaic=n?`<div class="alb-mosaic ${cls}">${mosaicInner}</div>`:`<div class="alb-empty-mosaic">🖼</div>`;
+        card.innerHTML=mosaic+`<div class="alb-meta"><div class="alb-name">${alb.name}</div><div class="alb-count">${albMoments.length} moment${albMoments.length!==1?'s':''}</div></div><button class="alb-del-btn" onclick="deleteAlbum(${alb.id},event)">✕</button>`;
+        grid.appendChild(card);
+      }
+    });
+  });
+}
+
+function renderAlbumDetail(){
+  if(!db||!currentAlbumId)return;const dg=document.getElementById('detail-grid');dg.innerHTML='';
+  db.transaction('albums','readonly').objectStore('albums').get(currentAlbumId).onsuccess=e=>{
+    const alb=e.target.result;if(!alb)return;
+    document.getElementById('detail-title').textContent=alb.name;
+    document.getElementById('detail-sub').textContent=alb.momentIds.length+' moment'+(alb.momentIds.length!==1?'s':'');
+    if(!alb.momentIds.length){dg.innerHTML='<div class="detail-empty">No moments yet.<br>Tap + Add to fill this album.</div>';return;}
+    getAllMoments(moments=>{
+      const albItems=moments.filter(m=>alb.momentIds.includes(m.id));
+      (async()=>{for(const it of albItems){
+        const url=await getItemUrl(it);const isVid=it.type&&(it.type.includes('video')||it.type.includes('webm'));
+        const el=document.createElement('div');el.className='mi fu';
+        el.innerHTML=(isVid?`<video src="${url}" muted></video>`:`<img src="${url}">`)
+          +`<div class="mi-grad"></div>`+(isVid?`<div class="vid-badge">▶ VIDEO</div>`:'')
+          +`<button class="mi-del" data-id="${it.id}">✕</button>`;
+        el.querySelector('.mi-del').onclick=ev=>{ev.stopPropagation();removeFromAlbum(it.id);};
+        el.onclick=()=>openViewer(it);dg.appendChild(el);
+      }})();
+    });
+  };
+}
+function removeFromAlbum(momentId){
+  if(!currentAlbumId)return;
+  const tx=db.transaction('albums','readwrite');tx.objectStore('albums').get(currentAlbumId).onsuccess=e=>{const alb=e.target.result;alb.momentIds=alb.momentIds.filter(id=>id!==momentId);tx.objectStore('albums').put(alb).onsuccess=renderAlbumDetail;};
+}
+async function openPickModal(){
+  if(!currentAlbumId)return;
+  db.transaction('albums','readonly').objectStore('albums').get(currentAlbumId).onsuccess=async e=>{
+    const alb=e.target.result;if(!alb)return;let selected=new Set(alb.momentIds);
+    getAllMoments(async moments=>{
+      const bd=document.createElement('div');bd.className='backdrop';
+      let rows='';
+      if(!moments.length){rows='<div class="pick-empty">No moments yet.</div>';}
+      else{for(const m of moments){
+        const url=await getItemUrl(m);const isVid=m.type&&(m.type.includes('video')||m.type.includes('webm'));const isSel=selected.has(m.id);
+        rows+=`<div class="pick-item${isSel?' sel':''}" data-id="${m.id}"><div class="pick-thumb">${isVid?`<video src="${url}" muted></video>`:`<img src="${url}">`}</div><div class="pick-info"><div class="pick-cap">${m.caption||'Untitled moment'}</div><div class="pick-time">${m.time}</div></div><span class="pick-chk">${isSel?'✅':'○'}</span></div>`;
+      }}
+      bd.innerHTML=`<div class="sheet"><div class="handle"></div><div class="sheet-title">Add to "${alb.name}"</div><div class="sheet-sub">Tap to select moments</div><div class="pick-list">${rows}</div><div class="sheet-btns" style="margin-top:16px"><button class="sbtn sbtn-p" id="btn-done">Save Selection</button><button class="sbtn sbtn-g" id="btn-can">Cancel</button></div></div>`;
+      document.body.appendChild(bd);
+      bd.querySelectorAll('.pick-item').forEach(row=>{row.addEventListener('click',()=>{const id=parseInt(row.dataset.id);if(selected.has(id)){selected.delete(id);row.classList.remove('sel');row.querySelector('.pick-chk').textContent='○';}else{selected.add(id);row.classList.add('sel');row.querySelector('.pick-chk').textContent='✅';}});});
+      const close=()=>{bd.classList.add('out');setTimeout(()=>bd.remove(),190);};
+      bd.querySelector('#btn-can').onclick=close;bd.addEventListener('click',e=>{if(e.target===bd)close();});
+      bd.querySelector('#btn-done').onclick=()=>{const tx=db.transaction('albums','readwrite');tx.objectStore('albums').get(currentAlbumId).onsuccess=ev=>{const a=ev.target.result;a.momentIds=[...selected];tx.objectStore('albums').put(a).onsuccess=()=>{close();renderAlbumDetail();};};};
+    });
+  };
+}
+
+/* ── home render ── */
+function render(){
+  if(!db)return;
+  document.getElementById('grid').innerHTML='';document.getElementById('star-strip').innerHTML='';
+  const items=[];db.transaction('m','readonly').objectStore('m').openCursor(null,'prev').onsuccess=e=>{const cur=e.target.result;if(cur){items.push(cur.value);cur.continue();}else paint(items);};
+}
+
+async function paint(items){
+  const grid=document.getElementById('grid'),hero=document.getElementById('hero-card'),strip=document.getElementById('star-strip');
+  const starred=items.filter(i=>i.starred);
+  document.getElementById('all-pill').textContent=items.length;
+  document.getElementById('star-pill').textContent=starred.length;
+  document.getElementById('hd-stats').textContent=items.length?items.length+' moment'+(items.length!==1?'s':''):'';
+  if(!items.length){
+    hero.innerHTML=`<div class="hero-empty"><div class="he-ring"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 2v22M2 13h22M4.5 4.5l17 17M21.5 4.5l-17 17" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".45" style="color:var(--accent)"/></svg></div><div class="he-txt">No moments yet</div><div class="he-hint">Tap Capture to upload</div></div>`;
+  } else paintHero(items[0]);
+  strip.innerHTML='';
+  if(!starred.length){strip.innerHTML='<div class="star-empty">Star your favourites to pin them here.</div>';}
+  else{for(const it of starred){const url=await getItemUrl(it);const el=document.createElement('div');el.className='st fu';const isVid=it.type&&(it.type.includes('video')||it.type.includes('webm'));el.innerHTML=isVid?`<video src="${url}" muted></video><span class="st-badge">⭐</span>`:`<img src="${url}"><span class="st-badge">⭐</span>`;el.onclick=()=>paintHero(it);strip.appendChild(el);}}
+  grid.innerHTML='';
+  if(!items.length){grid.innerHTML='<div class="grid-empty">Your moments will appear here.</div>';}
+  else{for(const it of items){const url=await getItemUrl(it);const isVid=it.type&&(it.type.includes('video')||it.type.includes('webm'));const el=document.createElement('div');el.className='mi fu';
+    el.innerHTML=(isVid?`<video src="${url}" muted></video>`:`<img src="${url}">`)
+      +`<div class="mi-grad"></div>`+(isVid?`<div class="vid-badge">▶ VIDEO</div>`:'')
+      +`<button class="mi-star" data-id="${it.id}">${it.starred?'⭐':'☆'}</button>`
+      +`<button class="mi-del" data-id="${it.id}">✕</button>`;
+    el.querySelector('.mi-star').onclick=e=>{e.stopPropagation();toggleStar(it.id,e.currentTarget);};
+    el.querySelector('.mi-del').onclick=e=>{e.stopPropagation();delMoment(it.id);};
+    el.onclick=()=>openViewer(it);grid.appendChild(el);}}
+}
+
+async function paintHero(it){
+  const hero=document.getElementById('hero-card');const url=await getItemUrl(it);
+  const isVid=it.type&&(it.type.includes('video')||it.type.includes('webm'));
+  hero.innerHTML=(isVid?`<video id="hero-vid" src="${url}" autoplay loop muted playsinline></video><button class="unmute-btn" id="unmute-btn" onclick="toggleHeroMute()">🔇 Tap for sound</button>`:`<img src="${url}">`)
+    +`<div class="hero-grad"></div><div class="hero-foot"><div class="hero-info">`
+    +(isVid?`<div class="hero-badge">▶ VIDEO</div>`:'')
+    +(it.caption?`<div class="hero-caption">${it.caption}</div>`:'')
+    +`<div class="hero-time">${it.time}</div></div>`
+    +`<button class="hero-star" onclick="toggleStar(${it.id},this)">${it.starred?'⭐':'☆'}</button></div>`;
+}
+function toggleHeroMute(){const v=document.getElementById('hero-vid');const btn=document.getElementById('unmute-btn');if(!v)return;v.muted=!v.muted;btn.textContent=v.muted?'🔇 Tap for sound':'🔊 Sound on';}
+
+async function openViewer(it){
+  const url=await getItemUrl(it);const isVid=it.type&&(it.type.includes('video')||it.type.includes('webm'));
+  const bd=document.createElement('div');bd.className='fv-backdrop';
+  bd.innerHTML=`<button class="fv-close" onclick="this.closest('.fv-backdrop').dispatchEvent(new Event('close'))">✕</button>
+    <div class="fv-media-wrap">${isVid?`<video class="fv-media" src="${url}" autoplay controls playsinline style="max-width:100%;max-height:100%"></video>`:`<img class="fv-media" src="${url}">`}</div>
+    <div class="fv-bottom">${it.caption?`<div class="fv-caption">${it.caption}</div>`:''}<div class="fv-time">${it.time}</div></div>`;
+  document.body.appendChild(bd);
+  function close(){bd.classList.add('out');setTimeout(()=>bd.remove(),190);}
+  bd.addEventListener('close',close);bd.addEventListener('click',e=>{if(e.target===bd)close();});
+}
+
+function toggleStar(id,btn){if(btn){btn.classList.remove('star-pop');void btn.offsetWidth;btn.classList.add('star-pop');}const tx=db.transaction('m','readwrite'),store=tx.objectStore('m');store.get(id).onsuccess=e=>{const it=e.target.result;it.starred=!it.starred;store.put(it).onsuccess=()=>render();};}
+function delMoment(id){
+  if(!confirm('Delete this moment?'))return;
+  getAllAlbums(albums=>{albums.forEach(alb=>{if(alb.momentIds.includes(id)){alb.momentIds=alb.momentIds.filter(mid=>mid!==id);db.transaction('albums','readwrite').objectStore('albums').put(alb);}});});
+  db.transaction('m','readwrite').objectStore('m').delete(id).onsuccess=render;
+}
+document.getElementById('up').onchange=e=>{const f=e.target.files[0];if(f)saveMoment(f,f.type);};
+</script>
+</body>
+</html>
